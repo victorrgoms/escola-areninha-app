@@ -1,15 +1,39 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import HeaderApp from '../components/HeaderApp'; // <-- Importando o cabeçalho novo
+import MapView, { Marker } from 'react-native-maps'; // <-- Importando os componentes do mapa
+import HeaderApp from '../components/HeaderApp';
+import api from '../services/api';
 
 export default function HomeScreen({ navigation }) {
+  const [usuario, setUsuario] = useState(null);
+
+  // Assim como no perfil, buscamos os dados do usuário logo que a Home abre
+  useEffect(() => {
+    async function carregarPerfilHome() {
+      try {
+        const response = await api.get('/usuarios/me');
+        setUsuario(response.data);
+      } catch (error) {
+        console.log("Erro ao carregar os dados da Home.");
+      }
+    }
+    carregarPerfilHome();
+  }, []);
+
+  // Pegando as coordenadas da Areninha do usuário (com fallback pra Fortaleza caso não tenha)
+  const lat = usuario?.areninha?.latitude ? Number(usuario.areninha.latitude) : -3.7319;
+  const lng = usuario?.areninha?.longitude ? Number(usuario.areninha.longitude) : -38.5267;
+  const temAreninhaVinculada = !!usuario?.areninha;
+
   return (
+    // Transformamos a View principal no ImageBackground!
     <ImageBackground 
       source={require('../../assets/images/background.png')} 
       style={styles.container}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
+        
         <HeaderApp />
 
         <View style={styles.content}>
@@ -17,14 +41,41 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.mapCardHeader}>
               <Text style={styles.mapCardTitle}>MAPA DAS ARENINHAS</Text>
             </View>
+            
             <TouchableOpacity 
-            style={styles.mapCardBody}
-            onPress={() => navigation.navigate('Map')}>
+              style={styles.mapCardBody}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Map')}
+            >
               <View style={styles.mapImagePlaceholder}>
-                <FontAwesome5 name="map-marker-alt" size={40} color="#00838F" style={{ marginTop: 20 }} />
-                <Text style={styles.mapCityText}>Fortaleza</Text>
+                
+                {/* Aqui entra o pulo do gato: o pointerEvents="none" desativa os gestos no mapa, 
+                    transformando ele numa imagem estática pra não bugar a rolagem da tela */}
+                <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+                  <MapView
+                    provider="google"
+                    style={StyleSheet.absoluteFillObject}
+                    initialRegion={{
+                      latitude: lat,
+                      longitude: lng,
+                      latitudeDelta: 0.01, // Um zoom bem focado na areninha
+                      longitudeDelta: 0.01,
+                    }}
+                  >
+                    {/* Se o cara tiver areninha, bota o pino vermelhinho nela */}
+                    {temAreninhaVinculada && (
+                      <Marker coordinate={{ latitude: lat, longitude: lng }} />
+                    )}
+                  </MapView>
+                </View>
+
               </View>
-              <Text style={styles.areninhaNameText}>Areninha Unidade X</Text>
+
+              {/* Título dinâmico puxando do banco */}
+              <Text style={styles.areninhaNameText}>
+                {usuario?.areninha?.nome ? `${usuario.areninha.nome}` : 'Carregando unidade...'}
+              </Text>
+
             </TouchableOpacity>
           </View>
 
@@ -40,8 +91,8 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-            style={[styles.gridButton, { backgroundColor: '#E3F2FD' }]}
-            onPress={() => navigation.navigate('Galeria')}
+              style={[styles.gridButton, { backgroundColor: '#E3F2FD' }]}
+              onPress={() => navigation.navigate('Galeria')}
             >
               <MaterialCommunityIcons name="image-multiple" size={35} color="#1565C0" />
               <Text style={styles.gridButtonText}>Galeria</Text>
@@ -55,18 +106,20 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1},
+  // Tirei o backgroundColor daqui pra imagem de fundo aparecer!
+  container: { flex: 1 }, 
   content: { padding: 20 },
-  // Mantive os estilos dos cards iguais
+  
   mapCard: { backgroundColor: '#FFF', borderRadius: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 4, marginBottom: 25, overflow: 'hidden' },
   mapCardHeader: { backgroundColor: '#00838F', flexDirection: 'row', justifyContent: 'space-between', padding: 12, paddingHorizontal: 15 },
-  mapCardTitle: { color: '#FFF', fontWeight: 'regular', fontSize: 14 },
+  mapCardTitle: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
   mapCardBody: { padding: 8 },
-  mapImagePlaceholder: { height: 180, backgroundColor: '#70b5d1', alignItems: 'center', justifyContent: 'center'},
-  mapCityText: { fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 5 },
-  openMapButton: { backgroundColor: '#00838F', paddingHorizontal: 25, paddingVertical: 10, borderRadius: 25, position: 'absolute', bottom: 20 },
-  openMapButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  
+  // Agora o placeholder só precisa ter overflow hidden pro mapa ficar com as bordinhas arredondadas por dentro
+  mapImagePlaceholder: { height: 180, backgroundColor: '#E0E0E0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden'},
+  
   areninhaNameText: { fontSize: 16, fontWeight: 'bold', color: '#444', marginTop: 15, textAlign: 'center', paddingVertical: 5, bottom: 5 },
+  
   gridContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   gridButton: { width: '31%', aspectRatio: 1, borderRadius: 15, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
   gridButtonText: { marginTop: 10, fontSize: 13, fontWeight: 'bold', color: '#333' },

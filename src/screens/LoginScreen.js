@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image 
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, ImageBackground, ScrollView 
 } from 'react-native';
 import { MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
 import { AuthContext } from '../contexts/AuthContext';
@@ -28,135 +28,123 @@ export default function LoginScreen({ navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <ImageBackground 
+      source={require('../../assets/images/background.png')} 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.topBackground} />
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-      <View style={styles.logoContainer}>
-        <MaterialCommunityIcons name="soccer" size={80} color="#00838F" />
-        <Text style={styles.logoTitle}>ARENINHA</Text>
-        <Text style={styles.logoSubtitle}>Escola Areninha</Text>
-      </View>
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../../assets/images/Areninha_logoteste.png')} 
+              style={styles.logoImage} 
+              resizeMode="contain" 
+            />
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.welcomeText}>Bem-vindo!</Text>
-        <Text style={styles.welcomeSubText}>Acesse sua conta</Text>
+          <View style={styles.card}>
+            <Text style={styles.welcomeText}>Bem-vindo!</Text>
+            <Text style={styles.welcomeSubText}>Acesse sua conta</Text>
 
-        <View style={styles.inputBox}>
-          <MaterialCommunityIcons name="email-outline" size={22} color="#0056b3" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="email-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="E-mail"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
 
-        <View style={styles.inputBox}>
-          <MaterialCommunityIcons name="lock-outline" size={22} color="#0056b3" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            secureTextEntry={!mostrarSenha}
-            value={senha}
-            onChangeText={setSenha}
-          />
-          <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-            <MaterialCommunityIcons name={mostrarSenha ? "eye-outline" : "eye-off-outline"} size={22} color="#999" />
-          </TouchableOpacity>
-        </View>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="lock-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Senha"
+                secureTextEntry={!mostrarSenha}
+                value={senha}
+                onChangeText={setSenha}
+              />
+              <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+                <MaterialCommunityIcons name={mostrarSenha ? "eye-outline" : "eye-off-outline"} size={22} color="#999" />
+              </TouchableOpacity>
+            </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <>
-              <Text style={styles.loginButtonText}>Entrar</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color="#FFF" style={{ position: 'absolute', right: 20 }} />
-            </>
-          )}
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.loginButtonText}>Entrar</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={20} color="#FFF" style={{ position: 'absolute', right: 20 }} />
+                </>
+              )}
+            </TouchableOpacity>
 
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
 
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>ou continue com</Text>
-          <View style={styles.dividerLine} />
-        </View>
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou continue com</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-        <View style={styles.socialContainer}>
-          <TouchableOpacity style={styles.socialButton}>
-            <AntDesign name="google" size={20} color="#DB4437" />
-            <Text style={styles.socialButtonText}>Google</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <MaterialCommunityIcons name="microsoft-windows" size={20} color="#00A4EF" />
-            <Text style={styles.socialButtonText}>Microsoft</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity 
-          style={{ marginTop: 25, alignItems: 'center' }} 
-          onPress={() => navigation.navigate('Cadastro')}
-        >
-          <Text style={{ color: '#666', fontSize: 14 }}>
-            Não tem uma conta? <Text style={{ fontWeight: 'bold', color: '#00838F' }}>Cadastre-se</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.bottomBackground} />
-    </KeyboardAvoidingView>
+            <View style={styles.socialContainer}>
+              <TouchableOpacity style={styles.socialButton}>
+                <AntDesign name="google" size={20} color="#DB4437" />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <MaterialCommunityIcons name="microsoft-windows" size={20} color="#00A4EF" />
+                <Text style={styles.socialButtonText}>Microsoft</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={{ marginTop: 25, alignItems: 'center' }} 
+              onPress={() => navigation.navigate('Cadastro')}
+            >
+              <Text style={{ color: '#666', fontSize: 14 }}>
+                Não tem uma conta? <Text style={{ fontWeight: 'bold', color: '#00838F' }}>Cadastre-se</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
-    alignItems: 'center',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-  },
-  topBackground: {
-    position: 'absolute',
-    top: 0,
-    width: '100%',
-    height: '35%',
-    backgroundColor: '#00838F',
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
-  },
-  bottomBackground: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: 50,
-    backgroundColor: '#00838F',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
+    alignItems: 'center',
+    paddingVertical: 40,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: -50,
+    marginBottom: 5,
+    marginTop: 30, // Dá um respiro pro logo não colar no topo
   },
-  logoTitle: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: '#00838F',
-    textTransform: 'uppercase',
-    letterSpacing: -1,
-  },
-  logoSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '600',
+  logoImage: {
+    width: 240, // Tamanho ideal pra ficar destacado na tela de login
+    height: 240,
   },
   card: {
     width: '85%',
@@ -201,7 +189,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   loginButton: {
-    backgroundColor: '#0056b3',
+    backgroundColor: '#00838F', // Mudado pro verde/teal da Areninha
     height: 55,
     borderRadius: 12,
     flexDirection: 'row',
@@ -219,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   forgotPasswordText: {
-    color: '#0056b3',
+    color: '#00838F', // Mudado pro verde/teal
     fontWeight: '600',
     fontSize: 14,
   },

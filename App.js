@@ -41,7 +41,6 @@ function TabRoutes() {
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Frequência" component={FrequenciaScreen} />
       <Tab.Screen name="Calendário" component={HomeScreen} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} />
     </Tab.Navigator>
   );
 }
@@ -71,6 +70,7 @@ function Routes() {
           {/* Telas que abrem "por cima" das abas e podem ter o botão de voltar */}
           <Stack.Screen name="Map" component={MapScreen} />
           <Stack.Screen name="Galeria" component={GaleriaScreen} />
+          <Stack.Screen name="Perfil" component={PerfilScreen} />
         </>
       )}
     </Stack.Navigator>

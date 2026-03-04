@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView 
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, ImageBackground 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
@@ -21,7 +21,6 @@ export default function CadastroScreen({ navigation }) {
 
   const turnosDisponiveis = ['Manhã', 'Tarde', 'Ambos'];
 
-  // Busca as areninhas disponíveis no banco para o usuário escolher
   useEffect(() => {
     async function carregarAreninhas() {
       try {
@@ -59,7 +58,7 @@ export default function CadastroScreen({ navigation }) {
         senha: senha,
         tipoUsuario: 'MONITOR',
         turnoLotado: turnoSelecionado,
-        areninhaId: areninhaSelecionada // Enviando o ID da areninha selecionada
+        areninhaId: areninhaSelecionada
       };
 
       await api.post('/usuarios/cadastrar', payload);
@@ -80,97 +79,127 @@ export default function CadastroScreen({ navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <ImageBackground 
+      source={require('../../assets/images/background.png')} 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.topBackground} />
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        <View style={styles.logoContainer}>
-          <MaterialCommunityIcons name="soccer" size={60} color="#00838F" />
-          <Text style={styles.logoTitle}>ARENINHA</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.welcomeText}>Criar Conta</Text>
-          <Text style={styles.welcomeSubText}>Preencha seus dados para começar</Text>
-
-          <View style={styles.inputBox}>
-            <MaterialCommunityIcons name="account-outline" size={22} color="#00838F" style={styles.icon} />
-            <TextInput style={styles.input} placeholder="Nome Completo" value={nome} onChangeText={setNome} />
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../../assets/images/Areninha_logoteste.png')} 
+              style={styles.logoImage} 
+              resizeMode="contain" 
+            />
           </View>
 
-          <View style={styles.inputBox}>
-            <MaterialCommunityIcons name="email-outline" size={22} color="#00838F" style={styles.icon} />
-            <TextInput style={styles.input} placeholder="E-mail" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-          </View>
+          <View style={styles.card}>
+            <Text style={styles.welcomeText}>Criar Conta</Text>
+            <Text style={styles.welcomeSubText}>Preencha seus dados para começar</Text>
 
-          {/* Seleção de Areninha */}
-          <Text style={styles.labelSection}>Areninha de Lotação:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollHorizontal}>
-            {areninhas.map((a) => (
-              <TouchableOpacity 
-                key={a.id}
-                style={[styles.badgeItem, areninhaSelecionada === a.id && styles.badgeItemSelected]}
-                onPress={() => setAreninhaSelecionada(a.id)}
-              >
-                <Text style={[styles.badgeItemText, areninhaSelecionada === a.id && styles.badgeItemTextSelected]}>
-                  {a.nome}
-                </Text>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="account-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput style={styles.input} placeholder="Nome Completo" value={nome} onChangeText={setNome} />
+            </View>
+
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="email-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput style={styles.input} placeholder="E-mail" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+            </View>
+
+            <Text style={styles.labelSection}>Areninha de Lotação:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollHorizontal}>
+              {areninhas.map((a) => (
+                <TouchableOpacity 
+                  key={a.id}
+                  style={[styles.badgeItem, areninhaSelecionada === a.id && styles.badgeItemSelected]}
+                  onPress={() => setAreninhaSelecionada(a.id)}
+                >
+                  <Text style={[styles.badgeItemText, areninhaSelecionada === a.id && styles.badgeItemTextSelected]}>
+                    {a.nome}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.labelSection}>Turno de Trabalho:</Text>
+            <View style={styles.badgesContainer}>
+              {turnosDisponiveis.map((t) => (
+                <TouchableOpacity 
+                  key={t}
+                  style={[styles.badgeItem, { flex: 1 }, turnoSelecionado === t && styles.badgeItemSelected]}
+                  onPress={() => setTurnoSelecionado(t)}
+                >
+                  <Text style={[styles.badgeItemText, turnoSelecionado === t && styles.badgeItemTextSelected]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="lock-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput style={styles.input} placeholder="Senha" secureTextEntry={!mostrarSenha} value={senha} onChangeText={setSenha} />
+              <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+                <MaterialCommunityIcons name={mostrarSenha ? "eye-outline" : "eye-off-outline"} size={22} color="#999" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            </View>
 
-          {/* Seleção de Turno */}
-          <Text style={styles.labelSection}>Turno de Trabalho:</Text>
-          <View style={styles.badgesContainer}>
-            {turnosDisponiveis.map((t) => (
-              <TouchableOpacity 
-                key={t}
-                style={[styles.badgeItem, { flex: 1 }, turnoSelecionado === t && styles.badgeItemSelected]}
-                onPress={() => setTurnoSelecionado(t)}
-              >
-                <Text style={[styles.badgeItemText, turnoSelecionado === t && styles.badgeItemTextSelected]}>{t}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="lock-check-outline" size={22} color="#00838F" style={styles.icon} />
+              <TextInput style={styles.input} placeholder="Confirmar Senha" secureTextEntry={!mostrarSenha} value={confirmarSenha} onChangeText={setConfirmarSenha} />
+            </View>
 
-          <View style={styles.inputBox}>
-            <MaterialCommunityIcons name="lock-outline" size={22} color="#00838F" style={styles.icon} />
-            <TextInput style={styles.input} placeholder="Senha" secureTextEntry={!mostrarSenha} value={senha} onChangeText={setSenha} />
-            <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-              <MaterialCommunityIcons name={mostrarSenha ? "eye-outline" : "eye-off-outline"} size={22} color="#999" />
+            <TouchableOpacity style={styles.cadastrarButton} onPress={handleCadastro} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.cadastrarButtonText}>Finalizar Cadastro</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.voltarLoginButton} onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.voltarLoginText}>Já tem uma conta? <Text style={{fontWeight: 'bold', color: '#00838F'}}>Faça Login</Text></Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.inputBox}>
-            <MaterialCommunityIcons name="lock-check-outline" size={22} color="#00838F" style={styles.icon} />
-            <TextInput style={styles.input} placeholder="Confirmar Senha" secureTextEntry={!mostrarSenha} value={confirmarSenha} onChangeText={setConfirmarSenha} />
-          </View>
-
-          <TouchableOpacity style={styles.cadastrarButton} onPress={handleCadastro} disabled={loading}>
-            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.cadastrarButtonText}>Finalizar Cadastro</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.voltarLoginButton} onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.voltarLoginText}>Já tem uma conta? <Text style={{fontWeight: 'bold', color: '#00838F'}}>Faça Login</Text></Text>
-          </TouchableOpacity>
-        </View>
-
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
-  topBackground: { position: 'absolute', top: 0, width: '100%', height: '35%', backgroundColor: '#00838F', borderBottomLeftRadius: 50, borderBottomRightRadius: 50 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
-  logoContainer: { alignItems: 'center', marginBottom: 20 },
-  logoTitle: { fontSize: 32, fontWeight: '900', color: '#FFF', textTransform: 'uppercase', marginTop: -5 },
-  card: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
+  container: { 
+    flex: 1 
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: { 
+    flexGrow: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingVertical: 40 
+  },
+  logoContainer: { 
+    alignItems: 'center', 
+    marginBottom: 5,
+    marginTop: 20
+  },
+  logoImage: {
+    width: 200,
+    height: 200,
+  },
+  card: { 
+    width: '85%', 
+    backgroundColor: '#FFF', 
+    borderRadius: 20, 
+    padding: 25, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 10, 
+    elevation: 8 
+  },
   welcomeText: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   welcomeSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 25, marginTop: 5 },
   inputBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 55, marginBottom: 15 },
