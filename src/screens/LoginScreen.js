@@ -6,7 +6,7 @@ import {
 import { MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
 import { AuthContext } from '../contexts/AuthContext';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { signIn } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -101,6 +101,14 @@ export default function LoginScreen() {
             <Text style={styles.socialButtonText}>Microsoft</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity 
+          style={{ marginTop: 25, alignItems: 'center' }} 
+          onPress={() => navigation.navigate('Cadastro')}
+        >
+          <Text style={{ color: '#666', fontSize: 14 }}>
+            Não tem uma conta? <Text style={{ fontWeight: 'bold', color: '#00838F' }}>Cadastre-se</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.bottomBackground} />

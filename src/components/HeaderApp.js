@@ -21,17 +21,10 @@ export default function HeaderApp({ showBack = false, title, subtitle }) {
 
         <View style={styles.logoWrapper}>
             <Image 
-                source={require('../../assets/images/Areninha_logo.png')} 
+                source={require('../../assets/images/Areninha_logoteste.png')} 
                 style={styles.logoImage} 
                 resizeMode="contain" 
                 />
-            </View>
-                <View style={styles.titleWrapper}>
-                    <View style={styles.subtitleContainer}>
-                    <View style={styles.line} />
-                    <Text style={styles.schoolName}>- Escola Areninha -</Text>
-                <View style={styles.line} />
-            </View>
         </View>
     </View>
   );
@@ -39,7 +32,7 @@ export default function HeaderApp({ showBack = false, title, subtitle }) {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     paddingTop: 50,
     paddingBottom: 20,
     alignItems: 'center',
@@ -57,8 +50,8 @@ const styles = StyleSheet.create({
     marginTop: -10,
   },
   logoImage: {
-    width: 180,
-    height: 110,
+    width: 200,
+    height: 200,
   },
   schoolName: {
     fontSize: 16,

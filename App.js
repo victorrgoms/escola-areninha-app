@@ -11,6 +11,9 @@ import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import MapScreen from './src/screens/MapScreen';
 import FrequenciaScreen from './src/screens/FrequenciaScreen';
+import PerfilScreen from './src/screens/PerfilScreen';
+import GaleriaScreen from './src/screens/GaleriaScreen';
+import CadastroScreen from './src/screens/CadastroScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -37,9 +40,8 @@ function TabRoutes() {
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Frequência" component={FrequenciaScreen} />
-      {/* Telas provisórias para os outros botões */}
       <Tab.Screen name="Calendário" component={HomeScreen} />
-      <Tab.Screen name="Perfil" component={HomeScreen} />
+      <Tab.Screen name="Perfil" component={PerfilScreen} />
     </Tab.Navigator>
   );
 }
@@ -58,13 +60,17 @@ function Routes() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {userToken == null ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Cadastro" component={CadastroScreen} />
+        </>
       ) : (
         <>
           {/* A tela principal logada agora é o Menu de Abas */}
           <Stack.Screen name="MainTabs" component={TabRoutes} />
           {/* Telas que abrem "por cima" das abas e podem ter o botão de voltar */}
           <Stack.Screen name="Map" component={MapScreen} />
+          <Stack.Screen name="Galeria" component={GaleriaScreen} />
         </>
       )}
     </Stack.Navigator>

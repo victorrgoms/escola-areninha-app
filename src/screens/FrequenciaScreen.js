@@ -1,34 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, ScrollView, Platform, Image 
+  Alert, ActivityIndicator, ScrollView, Platform, Image, ImageBackground 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import * as ImagePicker from 'expo-image-picker'; // <-- Importação nova
+import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
 import HeaderApp from '../components/HeaderApp';
 
 export default function FrequenciaScreen() {
   const [dataAula, setDataAula] = useState(new Date()); 
   const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Novo state para o Horário
+  const [horario, setHorario] = useState('07:30 às 10:30'); 
   const [atividade, setAtividade] = useState('');
   const [turmasSelecionadas, setTurmasSelecionadas] = useState([]);
   
   const [turnoSelecionado, setTurnoSelecionado] = useState('Manhã');
   const [turnoTravado, setTurnoTravado] = useState(false);
 
-  const [frequencias, setFrequencias] = useState([]);
+  const [frequenciasGlobais, setFrequenciasGlobais] = useState([]);
   const [editandoId, setEditandoId] = useState(null);
   
-  // State novo para a imagem da assinatura
   const [assinaturaBase64, setAssinaturaBase64] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const turmasDisponiveis = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
   const turnosDisponiveis = ['Manhã', 'Tarde'];
+
+  const frequenciasDoTurno = frequenciasGlobais.filter(f => f.turno === turnoSelecionado);
+
+  // 1. Carrega os dados salvos no celular assim que a tela abre
+  useEffect(() => {
+    async function carregarDadosLocais() {
+      try {
+        const dadosSalvos = await AsyncStorage.getItem('@areninha_frequencias');
+        if (dadosSalvos) {
+          setFrequenciasGlobais(JSON.parse(dadosSalvos));
+        }
+      } catch (error) {
+        console.log("Erro ao carregar os rascunhos salvos", error);
+      }
+    }
+    carregarDadosLocais();
+  }, []);
+
+  // 2. Salva no celular automaticamente sempre que a lista de aulas mudar
+  useEffect(() => {
+    async function salvarDadosLocais() {
+      try {
+        await AsyncStorage.setItem('@areninha_frequencias', JSON.stringify(frequenciasGlobais));
+      } catch (error) {
+        console.log("Erro ao salvar rascunhos", error);
+      }
+    }
+    salvarDadosLocais();
+  }, [frequenciasGlobais]);
+
+  // 3. Muda o horário padrão quando o usuário troca de turno
+  useEffect(() => {
+    if (turnoSelecionado === 'Manhã') {
+      setHorario('07:30 às 10:30');
+    } else if (turnoSelecionado === 'Tarde') {
+      setHorario('13:30 às 16:30');
+    }
+  }, [turnoSelecionado]);
 
   useEffect(() => {
     async function buscarPerfil() {
@@ -43,7 +84,7 @@ export default function FrequenciaScreen() {
           setTurnoTravado(false);
         }
       } catch (error) {
-        console.log("Erro ao buscar perfil do usuário. Usando padrão liberado.");
+        console.log("Erro ao buscar perfil do usuario");
       }
     }
     buscarPerfil();
@@ -63,12 +104,8 @@ export default function FrequenciaScreen() {
   }
 
   const onChangeData = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setDataAula(selectedDate);
-    }
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (selectedDate) setDataAula(selectedDate);
   };
 
   const toggleTurma = (turma) => {
@@ -84,11 +121,13 @@ export default function FrequenciaScreen() {
     setAtividade('');
     setTurmasSelecionadas([]);
     setEditandoId(null);
+    // Volta o horário pro padrão da aba atual
+    setHorario(turnoSelecionado === 'Manhã' ? '07:30 às 10:30' : '13:30 às 16:30');
   };
 
   const salvarFrequencia = () => {
-    if (turmasSelecionadas.length === 0 || !atividade) {
-      Alert.alert('Atenção', 'Preencha a atividade e selecione pelo menos uma turma.');
+    if (turmasSelecionadas.length === 0 || !atividade || !horario) {
+      Alert.alert('Atenção', 'Preencha o horário, a atividade e selecione pelo menos uma turma.');
       return;
     }
 
@@ -98,7 +137,8 @@ export default function FrequenciaScreen() {
     const novaFreq = {
       id: editandoId || Date.now().toString(),
       data: formatarData(dataAula),
-      turno: turnoSelecionado,
+      horario: horario, // Salvando o horário preenchido
+      turno: turnoSelecionado, 
       turma: turmasStr,
       atividade: atividadeFormatada,
       alunosPresentes: 0,
@@ -106,9 +146,9 @@ export default function FrequenciaScreen() {
     };
 
     if (editandoId) {
-      setFrequencias(frequencias.map(f => f.id === editandoId ? novaFreq : f));
+      setFrequenciasGlobais(frequenciasGlobais.map(f => f.id === editandoId ? novaFreq : f));
     } else {
-      setFrequencias([...frequencias, novaFreq]);
+      setFrequenciasGlobais([...frequenciasGlobais, novaFreq]);
     }
 
     limparFormulario();
@@ -117,23 +157,23 @@ export default function FrequenciaScreen() {
   const editarFrequencia = (item) => {
     const [dia, mes, ano] = item.data.split('/');
     setDataAula(new Date(ano, mes - 1, dia));
+    setHorario(item.horario || ''); // Preenche o input de hora com a hora salva
     const atividadeBase = item.atividade.split(' - ')[0];
     setAtividade(atividadeBase);
     setTurmasSelecionadas(item.turma.split(', '));
-    setTurnoSelecionado(item.turno);
     setEditandoId(item.id);
   };
 
   const excluirFrequencia = (id) => {
     Alert.alert('Excluir', 'Tem certeza que quer remover essa aula da lista?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sim, remover', onPress: () => setFrequencias(frequencias.filter(f => f.id !== id)) }
+      { text: 'Sim, remover', onPress: () => setFrequenciasGlobais(frequenciasGlobais.filter(f => f.id !== id)) }
     ]);
   };
 
   const calcularTotaisPorTurma = () => {
     const contagem = { '6º Ano': 0, '7º Ano': 0, '8º Ano': 0, '9º Ano': 0 };
-    frequencias.forEach(freq => {
+    frequenciasDoTurno.forEach(freq => {
       const turmasDestaAula = freq.turma.split(', ');
       turmasDestaAula.forEach(t => {
         if (contagem[t] !== undefined) {
@@ -146,9 +186,7 @@ export default function FrequenciaScreen() {
 
   const totaisCalculados = calcularTotaisPorTurma();
 
-  // Função nova para pegar a imagem da galeria
   const selecionarAssinatura = async () => {
-    // Pede permissão se for a primeira vez
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Ops', 'Precisamos de permissão para acessar suas fotos e pegar a assinatura.');
@@ -158,9 +196,9 @@ export default function FrequenciaScreen() {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [3, 1], // formato de assinatura
+      aspect: [3, 1],
       quality: 0.7,
-      base64: true, // ja converte a imagem pra base64
+      base64: true,
     });
 
     if (!result.canceled) {
@@ -169,12 +207,11 @@ export default function FrequenciaScreen() {
   };
 
   const gerarPDF = async () => {
-    if (frequencias.length === 0) {
-      Alert.alert('Atenção', 'Adicione pelo menos uma aula na lista para gerar o relatório.');
+    if (frequenciasDoTurno.length === 0) {
+      Alert.alert('Atenção', `Adicione pelo menos uma aula no turno da ${turnoSelecionado} para gerar o relatório.`);
       return;
     }
 
-    // Trava a geração se o cara esquecer de botar a assinatura
     if (!assinaturaBase64) {
       Alert.alert('Atenção', 'Por favor, anexe a imagem da sua assinatura para gerar o relatório final.');
       return;
@@ -184,9 +221,9 @@ export default function FrequenciaScreen() {
 
     try {
       const payloadWrapper = {
-        frequencias: frequencias,
+        frequencias: frequenciasDoTurno,
         totais: totaisCalculados,
-        assinaturaBase64: assinaturaBase64, // Mandamos a assinatura pro backend
+        assinaturaBase64: assinaturaBase64,
       };
 
       const response = await api.post('/frequencias/relatorio', payloadWrapper, {
@@ -198,7 +235,7 @@ export default function FrequenciaScreen() {
       
       reader.onloadend = async () => {
         const base64data = reader.result.split(',')[1];
-        const fileUri = `${FileSystem.documentDirectory}Relatorio_Areninha.pdf`;
+        const fileUri = `${FileSystem.documentDirectory}Relatorio_${turnoSelecionado}.pdf`;
 
         await FileSystem.writeAsStringAsync(fileUri, base64data, {
           encoding: 'base64',
@@ -207,7 +244,7 @@ export default function FrequenciaScreen() {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
             mimeType: 'application/pdf',
-            dialogTitle: 'Compartilhar Relatório Mensal',
+            dialogTitle: `Compartilhar Relatório - ${turnoSelecionado}`,
           });
         }
         
@@ -225,7 +262,7 @@ export default function FrequenciaScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={require('../../assets/images/background.png')} style={styles.container}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         
         <HeaderApp 
@@ -234,8 +271,38 @@ export default function FrequenciaScreen() {
           subtitle={`Frequência mensal - ${getMesAtual()}`} 
         />
 
+        <View style={styles.cardTurno}>
+          <Text style={styles.sectionTitle}>1. Turno deste Relatório</Text>
+          <View style={styles.badgesContainer}>
+            {turnosDisponiveis.map((t) => {
+              const selecionado = turnoSelecionado === t;
+              const bloqueado = turnoTravado && !selecionado;
+              
+              return (
+                <TouchableOpacity 
+                  key={t}
+                  disabled={bloqueado}
+                  style={[
+                    styles.badge, 
+                    { flex: 1 }, 
+                    selecionado && styles.badgeSelected,
+                    bloqueado && styles.badgeDisabled
+                  ]}
+                  onPress={() => setTurnoSelecionado(t)}
+                >
+                  <Text style={[
+                    styles.badgeText, 
+                    selecionado && styles.badgeTextSelected,
+                    bloqueado && styles.badgeTextDisabled
+                  ]}>{t}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         <View style={styles.cardForm}>
-          <Text style={styles.sectionTitle}>{editandoId ? 'Editando Aula' : 'Nova Aula'}</Text>
+          <Text style={styles.sectionTitle}>{editandoId ? 'Editando Aula' : '2. Adicionar Aula'}</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Data da Aula</Text>
@@ -254,31 +321,17 @@ export default function FrequenciaScreen() {
             )}
           </View>
 
+          {/* NOVO CAMPO DE HORÁRIO */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Turno {turnoTravado && '(Travado no seu cadastro)'}</Text>
-            <View style={styles.badgesContainer}>
-              {turnosDisponiveis.map((t) => {
-                const selecionado = turnoSelecionado === t;
-                const bloqueado = turnoTravado && !selecionado;
-                return (
-                  <TouchableOpacity 
-                    key={t}
-                    disabled={bloqueado}
-                    style={[
-                      styles.badge, 
-                      selecionado && styles.badgeSelected,
-                      bloqueado && styles.badgeDisabled
-                    ]}
-                    onPress={() => setTurnoSelecionado(t)}
-                  >
-                    <Text style={[
-                      styles.badgeText, 
-                      selecionado && styles.badgeTextSelected,
-                      bloqueado && styles.badgeTextDisabled
-                    ]}>{t}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <Text style={styles.label}>Horário da Aula</Text>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 07:30 às 10:30"
+                value={horario}
+                onChangeText={setHorario}
+              />
             </View>
           </View>
 
@@ -323,19 +376,20 @@ export default function FrequenciaScreen() {
             
             <TouchableOpacity style={styles.addButton} onPress={salvarFrequencia}>
               <MaterialCommunityIcons name={editandoId ? "check" : "plus"} size={20} color="#FFF" style={{ marginRight: 5 }} />
-              <Text style={styles.addButtonText}>{editandoId ? 'Salvar Edição' : 'Adicionar Frequência'}</Text>
+              <Text style={styles.addButtonText}>{editandoId ? 'Salvar Edição' : 'Adicionar à Lista'}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {frequencias.length > 0 && (
+        {frequenciasDoTurno.length > 0 && (
           <View style={styles.listContainer}>
-            <Text style={styles.sectionTitle}>Aulas Registradas ({frequencias.length})</Text>
+            <Text style={styles.sectionTitle}>Aulas Registradas ({frequenciasDoTurno.length})</Text>
             
-            {frequencias.map((item) => (
+            {frequenciasDoTurno.map((item) => (
               <View key={item.id} style={styles.listItem}>
                 <View style={styles.listContent}>
-                  <Text style={styles.listDate}>{item.data} - {item.turno}</Text>
+                  {/* Mostrando o Horário junto com a data na lista */}
+                  <Text style={styles.listDate}>{item.data} • {item.horario}</Text>
                   <Text style={styles.listActivity} numberOfLines={2}>{item.atividade}</Text>
                 </View>
                 
@@ -362,7 +416,6 @@ export default function FrequenciaScreen() {
               </View>
             </View>
 
-            {/* SEÇÃO DA ASSINATURA */}
             <View style={styles.assinaturaContainer}>
               <Text style={styles.sectionTitle}>Assinatura do Monitor</Text>
               
@@ -391,7 +444,7 @@ export default function FrequenciaScreen() {
               ) : (
                 <>
                   <MaterialCommunityIcons name="file-pdf-box" size={24} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.generateButtonText}>Gerar Relatório Final</Text>
+                  <Text style={styles.generateButtonText}>Gerar Relatório da {turnoSelecionado}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -399,28 +452,36 @@ export default function FrequenciaScreen() {
         )}
 
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
+  cardTurno: {
+    backgroundColor: '#FFF', padding: 20, borderRadius: 15, width: '90%', alignSelf: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+    marginBottom: 15, marginTop: -20, 
+    borderWidth: 1, borderColor: '#E0F7FA'
+  },
   cardForm: {
     backgroundColor: '#FFF', padding: 20, borderRadius: 15, width: '90%', alignSelf: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
-    marginBottom: 20, marginTop: -20, 
+    marginBottom: 20,
   },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  
   inputGroup: { marginBottom: 15 },
   label: { fontSize: 14, fontWeight: 'bold', color: '#555', marginBottom: 8 },
   inputBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F9F9',
     borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, paddingHorizontal: 15, height: 50,
   },
+  input: { flex: 1, fontSize: 16, color: '#333' },
   dateText: { fontSize: 16, color: '#333' },
   
   badgesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  badge: { backgroundColor: '#F0F0F0', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: '#DDD' },
+  badge: { backgroundColor: '#F0F0F0', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: '#DDD', alignItems: 'center' },
   badgeSelected: { backgroundColor: '#00838F', borderColor: '#00838F' },
   badgeDisabled: { backgroundColor: '#E0E0E0', borderColor: '#CCC', opacity: 0.6 },
   badgeText: { color: '#666', fontWeight: 'bold' },
@@ -443,7 +504,7 @@ const styles = StyleSheet.create({
   cancelButton: { justifyContent: 'center', marginRight: 15 },
   cancelButtonText: { color: '#999', fontWeight: 'bold', fontSize: 15 },
 
-  listContainer: { marginTop: 10, width: '90%', alignSelf: 'center' },
+  listContainer: { marginTop: 5, width: '90%', alignSelf: 'center' },
   listItem: {
     flexDirection: 'row', backgroundColor: '#FFF', padding: 15, borderRadius: 12,
     marginBottom: 10, alignItems: 'center', justifyContent: 'space-between',
@@ -466,49 +527,21 @@ const styles = StyleSheet.create({
   summaryTurma: { fontSize: 12, color: '#666', fontWeight: 'bold' },
   summaryQtd: { fontSize: 16, color: '#00838F', fontWeight: '900', marginTop: 2 },
 
-  // Estilos da nova seção de Assinatura
   assinaturaContainer: {
-    marginTop: 25,
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    marginTop: 25, backgroundColor: '#FFF', padding: 15, borderRadius: 12,
+    borderWidth: 1, borderColor: '#E0E0E0',
   },
   assinaturaUploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0F8FF',
-    borderWidth: 1,
-    borderColor: '#00838F',
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    paddingVertical: 20,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F8FF',
+    borderWidth: 1, borderColor: '#00838F', borderStyle: 'dashed', borderRadius: 10, paddingVertical: 20,
   },
-  assinaturaUploadText: {
-    color: '#00838F',
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
+  assinaturaUploadText: { color: '#00838F', fontWeight: 'bold', marginLeft: 10 },
   assinaturaPreviewBox: {
-    position: 'relative',
-    alignItems: 'center',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    position: 'relative', alignItems: 'center', backgroundColor: '#F9F9F9',
+    borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E0E0E0',
   },
-  assinaturaImage: {
-    width: '100%',
-    height: 80, // Mantém a proporção esticadinha
-  },
-  removerAssinaturaBtn: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-  },
+  assinaturaImage: { width: '100%', height: 80 },
+  removerAssinaturaBtn: { position: 'absolute', top: 5, right: 5 },
 
   generateButton: {
     backgroundColor: '#2E7D32', height: 55, borderRadius: 12, flexDirection: 'row',

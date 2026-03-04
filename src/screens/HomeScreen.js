@@ -1,14 +1,15 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import HeaderApp from '../components/HeaderApp'; // <-- Importando o cabeçalho novo
 
 export default function HomeScreen({ navigation }) {
   return (
-    <View style={styles.container}>
+    <ImageBackground 
+      source={require('../../assets/images/background.png')} 
+      style={styles.container}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
-        
-        {/* Cabeçalho Padronizado (Sem botão de voltar na Home) */}
         <HeaderApp />
 
         <View style={styles.content}>
@@ -38,7 +39,10 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.gridButtonText}>Equipe</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.gridButton, { backgroundColor: '#E3F2FD' }]}>
+            <TouchableOpacity 
+            style={[styles.gridButton, { backgroundColor: '#E3F2FD' }]}
+            onPress={() => navigation.navigate('Galeria')}
+            >
               <MaterialCommunityIcons name="image-multiple" size={35} color="#1565C0" />
               <Text style={styles.gridButtonText}>Galeria</Text>
             </TouchableOpacity>
@@ -46,12 +50,12 @@ export default function HomeScreen({ navigation }) {
         </View>
 
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1},
   content: { padding: 20 },
   // Mantive os estilos dos cards iguais
   mapCard: { backgroundColor: '#FFF', borderRadius: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 4, marginBottom: 25, overflow: 'hidden' },
