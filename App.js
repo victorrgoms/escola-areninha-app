@@ -14,6 +14,8 @@ import FrequenciaScreen from './src/screens/FrequenciaScreen';
 import PerfilScreen from './src/screens/PerfilScreen';
 import GaleriaScreen from './src/screens/GaleriaScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
+import CalendarioScreen from './src/screens/CalendarioScreen';
+import EquipeScreen from './src/screens/EquipeScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -40,7 +42,15 @@ function TabRoutes() {
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Frequência" component={FrequenciaScreen} />
-      <Tab.Screen name="Calendário" component={HomeScreen} />
+      <Tab.Screen 
+        name="Calendario" 
+        component={CalendarioScreen} 
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar-month" color={color} size={size} />
+          )
+        }} 
+      />
     </Tab.Navigator>
   );
 }
@@ -71,6 +81,8 @@ function Routes() {
           <Stack.Screen name="Map" component={MapScreen} />
           <Stack.Screen name="Galeria" component={GaleriaScreen} />
           <Stack.Screen name="Perfil" component={PerfilScreen} />
+          <Stack.Screen name="Calendario" component={CalendarioScreen} />
+          <Stack.Screen name="Equipe" component={EquipeScreen} />
         </>
       )}
     </Stack.Navigator>

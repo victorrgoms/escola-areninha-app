@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, Linking, Platform, Text } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { 
+  View, StyleSheet, ActivityIndicator, Alert, Linking, 
+  Platform, Text, TextInput, ScrollView, TouchableOpacity, ImageBackground 
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import HeaderApp from '../components/HeaderApp';
 import api from '../services/api';
 
 export default function MapScreen() {
   const [areninhas, setAreninhas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     async function carregarAreninhas() {
@@ -13,7 +18,7 @@ export default function MapScreen() {
         const response = await api.get('/areninhas');
         setAreninhas(response.data);
       } catch (error) {
-        Alert.alert('Deu ruim', 'Não consegui buscar as areninhas do servidor.');
+        Alert.alert('Erro', 'Não consegui buscar a lista de areninhas do servidor.');
       } finally {
         setLoading(false);
       }
@@ -21,85 +26,119 @@ export default function MapScreen() {
     carregarAreninhas();
   }, []);
 
-  // joga a coordenada pro waze/maps do proprio celular
-  function tracarRota(lat, lng, nome) {
+  // Abre o Google Maps (Android) ou Apple Maps (iOS) traçando a rota
+  function abrirMapa(lat, lng, nome) {
+    if (!lat || !lng) {
+      Alert.alert('Atenção', 'Coordenadas indisponíveis para esta unidade.');
+      return;
+    }
+
     const latLng = `${lat},${lng}`;
-    
-    // esquema diferente pro ios e pro android
     const url = Platform.select({
       ios: `maps:0,0?q=${nome}@${latLng}`,
       android: `geo:0,0?q=${latLng}(${nome})`
     });
 
     Linking.openURL(url).catch(() => {
-      Alert.alert('Ops', 'Não encontrei nenhum app de mapa instalado.');
+      Alert.alert('Ops', 'Não encontrei nenhum app de mapa instalado no seu celular.');
     });
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2E7D32" />
-      </View>
-    );
-  }
+  // Filtra a lista conforme o usuário digita na barra de pesquisa
+  const areninhasFiltradas = areninhas.filter(item => 
+    item.nome.toLowerCase().includes(busca.toLowerCase())
+  );
 
-  // Se estiver rodando na web, mostra um aviso em vez de quebrar o app
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ fontSize: 18, color: '#666', textAlign: 'center', padding: 20 }}>
-          O mapa interativo só funciona no aplicativo de celular. Abra no Expo Go!
-        </Text>
-      </View>
-    );
-  }
-
-  // Se for celular, renderiza o mapa normalmente
   return (
-    <View style={styles.container}>
-      <MapView
-        provider="google"
-        style={styles.map}
-        initialRegion={{
-          latitude: -3.7319,
-          longitude: -38.5267,
-          latitudeDelta: 0.15,
-          longitudeDelta: 0.15,
-        }}
-      >
-        {areninhas
-          // Filtra pra não tentar renderizar areninha sem coordenada
-          .filter(item => item.latitude != null && item.longitude != null)
-          .map(item => (
-            <Marker
-              key={item.id}
-              coordinate={{ 
-                latitude: Number(item.latitude), 
-                longitude: Number(item.longitude) 
-              }}
-              title={item.nome}
-              description="Toque aqui para abrir a rota"
-              onCalloutPress={() => tracarRota(item.latitude, item.longitude, item.nome)}
-            />
-        ))}
-      </MapView>
-    </View>
+    <ImageBackground 
+      source={require('../../assets/images/background.png')} 
+      style={styles.container}
+    >
+      <HeaderApp showBack={true} />
+
+      <View style={styles.content}>
+        
+        {/* BARRA DE BUSCA */}
+        <View style={styles.searchBox}>
+          <MaterialCommunityIcons name="magnify" size={24} color="#00838F" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar Areninha..."
+            value={busca}
+            onChangeText={setBusca}
+            placeholderTextColor="#999"
+          />
+          {busca.length > 0 && (
+            <TouchableOpacity onPress={() => setBusca('')}>
+              <MaterialCommunityIcons name="close-circle" size={20} color="#CCC" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* LISTA DE ARENINHAS */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#00838F" style={{ marginTop: 50 }} />
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            {areninhasFiltradas.length > 0 ? (
+              areninhasFiltradas.map((item) => (
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.cardItem}
+                  activeOpacity={0.7}
+                  onPress={() => abrirMapa(item.latitude, item.longitude, item.nome)}
+                >
+                  <View style={styles.cardTextContainer}>
+                    <Text style={styles.cardTitle}>{item.nome}</Text>
+                    <Text style={styles.cardSubtitle}>
+                      <MaterialCommunityIcons name="navigation-variant" size={14} /> Tocar para traçar rota
+                    </Text>
+                  </View>
+                  <View style={styles.iconContainer}>
+                    <MaterialCommunityIcons name="map-marker-radius" size={28} color="#FFF" />
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="map-search-outline" size={50} color="#CCC" />
+                <Text style={styles.emptyText}>Nenhuma areninha encontrada.</Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  content: { paddingHorizontal: 20, flex: 1, marginTop: 10 },
+  
+  searchBox: { 
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', 
+    borderRadius: 12, paddingHorizontal: 15, height: 55, marginBottom: 20, 
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 
   },
-  map: {
-    width: '100%',
-    height: '100%',
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 16, color: '#333' },
+  
+  cardItem: { 
+    flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 15, padding: 15, 
+    marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, borderWidth: 1, borderColor: '#F0F0F0'
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F4F6F8',
-  }
+  cardTextContainer: { flex: 1, paddingRight: 10 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  cardSubtitle: { fontSize: 13, color: '#00838F', marginTop: 4, fontWeight: '600' },
+  
+  iconContainer: { 
+    backgroundColor: '#00838F', width: 50, height: 50, borderRadius: 25, 
+    justifyContent: 'center', alignItems: 'center', shadowColor: '#00838F', 
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3
+  },
+  
+  emptyContainer: { alignItems: 'center', marginTop: 40 },
+  emptyText: { textAlign: 'center', color: '#666', fontSize: 16, marginTop: 10 }
 });
