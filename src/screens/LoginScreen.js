@@ -1,10 +1,13 @@
 import React, { useState, useContext } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, ImageBackground, ScrollView 
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, ScrollView, Dimensions 
 } from 'react-native';
 import { MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
 import { AuthContext } from '../contexts/AuthContext';
+
+// pega a altura total da tela do aparelho
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const { signIn } = useContext(AuthContext);
@@ -28,10 +31,14 @@ export default function LoginScreen({ navigation }) {
   }
 
   return (
-    <ImageBackground 
-      source={require('../../assets/images/background.png')} 
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      
+      {/* imagem com position absolute e altura fixa pra nao quebrar com o teclado */}
+      <Image 
+        source={require('../../assets/images/background.png')} 
+        style={styles.backgroundImage}
+      />
+
       <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -120,13 +127,20 @@ export default function LoginScreen({ navigation }) {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF', 
+  },
+  backgroundImage: {
+    position: 'absolute',
+    width: '100%',
+    height: height, 
+    resizeMode: 'cover',
   },
   keyboardView: {
     flex: 1,
@@ -140,10 +154,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 5,
-    marginTop: 30, // Dá um respiro pro logo não colar no topo
+    marginTop: 30, 
   },
   logoImage: {
-    width: 240, // Tamanho ideal pra ficar destacado na tela de login
+    width: 240, 
     height: 240,
   },
   card: {
@@ -189,7 +203,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   loginButton: {
-    backgroundColor: '#00838F', // Mudado pro verde/teal da Areninha
+    backgroundColor: '#00838F', 
     height: 55,
     borderRadius: 12,
     flexDirection: 'row',
@@ -207,7 +221,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   forgotPasswordText: {
-    color: '#00838F', // Mudado pro verde/teal
+    color: '#00838F', 
     fontWeight: '600',
     fontSize: 14,
   },

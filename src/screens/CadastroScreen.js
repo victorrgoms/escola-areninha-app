@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, ImageBackground 
+  Alert, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Image, ImageBackground 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
+
+const { height } = Dimensions.get('window');
 
 export default function CadastroScreen({ navigation }) {
   const [nome, setNome] = useState('');

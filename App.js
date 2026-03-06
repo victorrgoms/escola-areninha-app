@@ -1,10 +1,11 @@
 import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'; // <-- Novo
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AuthProvider, AuthContext } from './src/contexts/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
@@ -25,11 +26,11 @@ function TabRoutes() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false, // Tira o cabeçalho nativo branco de todas as telas
+        headerShown: false,
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === 'Inicio') iconName = 'home';
-          else if (route.name === 'Frequência') iconName = 'calendar-month'; // Icóne mais proximo da arte
+          else if (route.name === 'Frequência') iconName = 'clipboard-list';
           else if (route.name === 'Calendário') iconName = 'calendar-check';
           else if (route.name === 'Perfil') iconName = 'account';
 
