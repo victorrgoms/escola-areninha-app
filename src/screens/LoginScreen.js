@@ -3,10 +3,10 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
   Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, ScrollView, Dimensions 
 } from 'react-native';
-import { MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../contexts/AuthContext';
 
-// pega a altura total da tela do aparelho
+// Pega a altura total da tela do aparelho para a imagem de fundo não quebrar com o teclado
 const { height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
@@ -33,7 +33,6 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       
-      {/* imagem com position absolute e altura fixa pra nao quebrar com o teclado */}
       <Image 
         source={require('../../assets/images/background.png')} 
         style={styles.backgroundImage}
@@ -98,23 +97,6 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
             </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou continue com</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialContainer}>
-              <TouchableOpacity style={styles.socialButton}>
-                <AntDesign name="google" size={20} color="#DB4437" />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <MaterialCommunityIcons name="microsoft-windows" size={20} color="#00A4EF" />
-                <Text style={styles.socialButtonText}>Microsoft</Text>
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity 
               style={{ marginTop: 25, alignItems: 'center' }} 
               onPress={() => navigation.navigate('Cadastro')}
@@ -132,132 +114,20 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF', 
-  },
-  backgroundImage: {
-    position: 'absolute',
-    width: '100%',
-    height: height, 
-    resizeMode: 'cover',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 5,
-    marginTop: 30, 
-  },
-  logoImage: {
-    width: 240, 
-    height: 240,
-  },
-  card: {
-    width: '85%',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  welcomeSubText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 25,
-    marginTop: 5,
-  },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 55,
-    marginBottom: 15,
-  },
-  icon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  loginButton: {
-    backgroundColor: '#00838F', 
-    height: 55,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  loginButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  forgotPassword: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  forgotPasswordText: {
-    color: '#00838F', 
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#999',
-    fontSize: 12,
-  },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingVertical: 12,
-    width: '48%',
-  },
-  socialButtonText: {
-    marginLeft: 8,
-    color: '#555',
-    fontWeight: '600',
-  }
+  container: { flex: 1, backgroundColor: '#FFF' },
+  backgroundImage: { position: 'absolute', width: '100%', height: height, resizeMode: 'cover' },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  logoContainer: { alignItems: 'center', marginBottom: 5, marginTop: 30 },
+  logoImage: { width: 240, height: 240 },
+  card: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
+  welcomeText: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
+  welcomeSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 25, marginTop: 5 },
+  inputBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 55, marginBottom: 15 },
+  icon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: '#333' },
+  loginButton: { backgroundColor: '#00838F', height: 55, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  loginButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  forgotPassword: { marginTop: 15, alignItems: 'center' },
+  forgotPasswordText: { color: '#00838F', fontWeight: '600', fontSize: 14 }
 });

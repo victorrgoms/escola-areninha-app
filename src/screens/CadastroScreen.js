@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Image, ImageBackground 
+  Alert, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Image 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
@@ -18,10 +18,13 @@ export default function CadastroScreen({ navigation }) {
   const [areninhas, setAreninhas] = useState([]);
   const [areninhaSelecionada, setAreninhaSelecionada] = useState(null);
   
+  const [areaSelecionada, setAreaSelecionada] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const turnosDisponiveis = ['Manhã', 'Tarde', 'Ambos'];
+  const areasDisponiveis = ['Matemática', 'Esportes', 'Cidadania', 'Português', 'Inglês'];
 
   useEffect(() => {
     async function carregarAreninhas() {
@@ -37,17 +40,19 @@ export default function CadastroScreen({ navigation }) {
 
   async function handleCadastro() {
     if (!nome || !email || !senha || !confirmarSenha) {
-      Alert.alert('Atenção', 'Preencha todos os campos.');
+      Alert.alert('Atenção', 'Preencha todos os campos textuais.');
       return;
     }
-
     if (senha !== confirmarSenha) {
       Alert.alert('Atenção', 'As senhas não coincidem.');
       return;
     }
-
     if (!areninhaSelecionada) {
       Alert.alert('Atenção', 'Por favor, selecione a sua Areninha de lotação.');
+      return;
+    }
+    if (!areaSelecionada) {
+      Alert.alert('Atenção', 'Por favor, selecione sua Área de Conhecimento.');
       return;
     }
 
@@ -60,7 +65,8 @@ export default function CadastroScreen({ navigation }) {
         senha: senha,
         tipoUsuario: 'MONITOR',
         turnoLotado: turnoSelecionado,
-        areninhaId: areninhaSelecionada
+        areninhaId: areninhaSelecionada,
+        areaConhecimento: areaSelecionada
       };
 
       await api.post('/usuarios/cadastrar', payload);
@@ -81,10 +87,14 @@ export default function CadastroScreen({ navigation }) {
   }
 
   return (
-    <ImageBackground 
-      source={require('../../assets/images/background.png')} 
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      
+      {/* Imagem de fundo absoluta igual fizemos no Login */}
+      <Image 
+        source={require('../../assets/images/background.png')} 
+        style={styles.backgroundImage}
+      />
+
       <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -92,11 +102,7 @@ export default function CadastroScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/images/Areninha_logoteste.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain" 
-            />
+            <Image source={require('../../assets/images/Areninha_logoteste.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
 
           <View style={styles.card}>
@@ -113,6 +119,19 @@ export default function CadastroScreen({ navigation }) {
               <TextInput style={styles.input} placeholder="E-mail" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
             </View>
 
+            <Text style={styles.labelSection}>Área de Conhecimento:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollHorizontal}>
+              {areasDisponiveis.map((area) => (
+                <TouchableOpacity 
+                  key={area}
+                  style={[styles.badgeItem, areaSelecionada === area && styles.badgeItemSelected]}
+                  onPress={() => setAreaSelecionada(area)}
+                >
+                  <Text style={[styles.badgeItemText, areaSelecionada === area && styles.badgeItemTextSelected]}>{area}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Text style={styles.labelSection}>Areninha de Lotação:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollHorizontal}>
               {areninhas.map((a) => (
@@ -121,9 +140,7 @@ export default function CadastroScreen({ navigation }) {
                   style={[styles.badgeItem, areninhaSelecionada === a.id && styles.badgeItemSelected]}
                   onPress={() => setAreninhaSelecionada(a.id)}
                 >
-                  <Text style={[styles.badgeItemText, areninhaSelecionada === a.id && styles.badgeItemTextSelected]}>
-                    {a.nome}
-                  </Text>
+                  <Text style={[styles.badgeItemText, areninhaSelecionada === a.id && styles.badgeItemTextSelected]}>{a.nome}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -165,43 +182,18 @@ export default function CadastroScreen({ navigation }) {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1 
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: { 
-    flexGrow: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingVertical: 40 
-  },
-  logoContainer: { 
-    alignItems: 'center', 
-    marginBottom: 5,
-    marginTop: 20
-  },
-  logoImage: {
-    width: 200,
-    height: 200,
-  },
-  card: { 
-    width: '85%', 
-    backgroundColor: '#FFF', 
-    borderRadius: 20, 
-    padding: 25, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 10, 
-    elevation: 8 
-  },
+  container: { flex: 1, backgroundColor: '#FFF' },
+  backgroundImage: { position: 'absolute', width: '100%', height: height, resizeMode: 'cover' },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  logoContainer: { alignItems: 'center', marginBottom: 5, marginTop: 20 },
+  logoImage: { width: 200, height: 200 },
+  card: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
   welcomeText: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   welcomeSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 25, marginTop: 5 },
   inputBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 55, marginBottom: 15 },
