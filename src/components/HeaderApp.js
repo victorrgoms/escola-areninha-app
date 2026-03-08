@@ -30,7 +30,7 @@ export default function HeaderApp({ showBack = false }) {
             <MaterialCommunityIcons name="arrow-left" size={32} color="#00838F" />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={() => console.log('menu lateral click')}>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
             <MaterialCommunityIcons name="menu" size={32} color="#00838F" />
           </TouchableOpacity>
         )}
