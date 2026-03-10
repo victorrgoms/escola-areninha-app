@@ -28,24 +28,24 @@ export default function FrequenciaScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingDados, setLoadingDados] = useState(true);
 
-  const turmasDisponiveis = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
-  const turnosDisponiveis = ['Manhã', 'Tarde'];
+  // controla qual mes e ano estamos olhando na tela
+  const [mesConsulta, setMesConsulta] = useState(new Date().getMonth() + 1); 
+  const [anoConsulta, setAnoConsulta] = useState(new Date().getFullYear());
 
-  const frequenciasDoTurno = frequenciasGlobais.filter(f => f.turno === turnoSelecionado);
+  const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const mesFormatado = `${nomesMeses[mesConsulta - 1]} ${anoConsulta}`;
 
+  // Força a variável a ser sempre um Array, mesmo que o backend mande lixo ou undefined
+  const listaSegura = Array.isArray(frequenciasGlobais) ? frequenciasGlobais : [];
+  const frequenciasDoTurno = listaSegura.filter(f => {
+    // Se o backend não mandou o turno, adivinhamos pelo horário!
+    const turnoDaAula = f.turno || (f.horario && f.horario.includes('07:30') ? 'Manhã' : 'Tarde');
+    return turnoDaAula === turnoSelecionado;
+  });
+  // recarrega os dados do banco toda vez q o mes mudar
   useEffect(() => {
-    async function carregarDadosDoBanco() {
-      try {
-        const response = await api.get('/frequencias');
-        setFrequenciasGlobais(response.data);
-      } catch (error) {
-        Alert.alert('Erro', 'Não foi possível carregar o teu histórico de aulas.');
-      } finally {
-        setLoadingDados(false);
-      }
-    }
     carregarDadosDoBanco();
-  }, []);
+  }, [mesConsulta, anoConsulta]);
 
   useEffect(() => {
     async function buscarPerfil() {
@@ -60,7 +60,7 @@ export default function FrequenciaScreen() {
           setTurnoTravado(false);
         }
       } catch (error) {
-        console.log("Falha ao buscar perfil na tela de frequência.");
+        console.log("Erro ao buscar perfil");
       }
     }
     buscarPerfil();
@@ -74,7 +74,42 @@ export default function FrequenciaScreen() {
     }
   }, [turnoSelecionado]);
 
-  // Formata o objeto Date do JS para DD/MM/YYYY
+  async function carregarDadosDoBanco() {
+    setLoadingDados(true);
+    try {
+      const response = await api.get(`/frequencias?mes=${mesConsulta}&ano=${anoConsulta}`);
+      
+      // O PULO DO GATO: Só salva no estado se for realmente um Array! Se não for, salva vazio [].
+      setFrequenciasGlobais(Array.isArray(response.data) ? response.data : []);
+      
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Erro', 'Não foi possível carregar as aulas deste mês.');
+      
+      // Se a requisição falhar (erro 403, 500, sem net), a gente garante que a lista fica vazia e a tela não quebra!
+      setFrequenciasGlobais([]); 
+    } finally {
+      setLoadingDados(false);
+    }
+  }
+
+  // avanca ou volta um mes na setinha
+  const mudarMes = (delta) => {
+    let novoMes = mesConsulta + delta;
+    let novoAno = anoConsulta;
+
+    if (novoMes > 12) {
+      novoMes = 1;
+      novoAno += 1;
+    } else if (novoMes < 1) {
+      novoMes = 12;
+      novoAno -= 1;
+    }
+
+    setMesConsulta(novoMes);
+    setAnoConsulta(novoAno);
+  };
+
   const formatarData = (data) => {
     const d = new Date(data);
     const dia = String(d.getDate()).padStart(2, '0');
@@ -83,17 +118,11 @@ export default function FrequenciaScreen() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  // Transforma YYYY-MM-DD que vem do banco para DD/MM/YYYY
   const formatarDataDoBanco = (dataString) => {
     if (!dataString) return '';
     const partes = dataString.split('-');
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
   };
-
-  const getMesAtual = () => {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    return `${meses[new Date().getMonth()]} ${new Date().getFullYear()}`;
-  }
 
   const onChangeData = (event, selectedDate) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
@@ -122,45 +151,43 @@ export default function FrequenciaScreen() {
     }
 
     setLoading(true);
-
     try {
       const turmasStr = turmasSelecionadas.join(', ');
       const atividadeFinal = `${atividade} - ${turmasStr}`;
 
       const payload = {
-        data: dataAula.toISOString().split('T')[0], // Manda YYYY-MM-DD pro Spring
+        data: dataAula.toISOString().split('T')[0], 
         horario: horario,
         atividade: atividadeFinal,
         turno: turnoSelecionado
       };
 
-      const response = await api.post('/frequencias', payload);
+      await api.post('/frequencias', payload);
       
-      // Coloca a aula nova no topo da lista local
-      setFrequenciasGlobais([response.data, ...frequenciasGlobais]);
+      // da um refresh na lista depois q salva
+      carregarDadosDoBanco();
       
       Alert.alert('Sucesso', 'Aula registada!');
       limparFormulario();
-
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível guardar a aula na base de dados.');
+      Alert.alert('Erro', 'Não foi possível guardar a aula.');
     } finally {
       setLoading(false);
     }
   };
 
   const excluirFrequencia = (id) => {
-    Alert.alert('Eliminar', 'Queres mesmo remover esta aula?', [
+    Alert.alert('Apagar', 'Deseja mesmo remover esta aula?', [
       { text: 'Cancelar', style: 'cancel' },
       { 
-        text: 'Sim, remover', 
+        text: 'Sim', 
         style: 'destructive',
         onPress: async () => {
           try {
             await api.delete(`/frequencias/${id}`);
             setFrequenciasGlobais(frequenciasGlobais.filter(f => f.id !== id));
           } catch (error) {
-            Alert.alert('Erro', 'Não foi possível apagar a aula.');
+            Alert.alert('Erro', 'Falha ao apagar.');
           }
         } 
       }
@@ -170,8 +197,6 @@ export default function FrequenciaScreen() {
   const calcularTotaisPorTurma = () => {
     const contagem = { '6º Ano': 0, '7º Ano': 0, '8º Ano': 0, '9º Ano': 0 };
     frequenciasDoTurno.forEach(freq => {
-      // Como a turma vem dentro do texto da atividade (ex: "Futebol - 6º Ano, 7º Ano")
-      // fazemos uma busca simples pelo nome da turma na string toda
       Object.keys(contagem).forEach(t => {
         if (freq.atividade && freq.atividade.includes(t)) {
           contagem[t] += 1;
@@ -205,17 +230,15 @@ export default function FrequenciaScreen() {
 
   const gerarPDF = async () => {
     if (frequenciasDoTurno.length === 0) {
-      Alert.alert('Atenção', `Adiciona pelo menos uma aula no turno da ${turnoSelecionado} para gerar o relatório.`);
+      Alert.alert('Atenção', `Adiciona pelo menos uma aula no turno da ${turnoSelecionado}.`);
       return;
     }
-
     if (!assinaturaBase64) {
-      Alert.alert('Atenção', 'Anexa a imagem da tua assinatura para gerar o documento final.');
+      Alert.alert('Atenção', 'Anexa a imagem da tua assinatura.');
       return;
     }
 
     setLoading(true);
-
     try {
       const payloadWrapper = {
         frequencias: frequenciasDoTurno,
@@ -232,7 +255,7 @@ export default function FrequenciaScreen() {
       
       reader.onloadend = async () => {
         const base64data = reader.result.split(',')[1];
-        const fileUri = `${FileSystem.documentDirectory}Relatorio_${turnoSelecionado}.pdf`;
+        const fileUri = `${FileSystem.documentDirectory}Relatorio_${mesFormatado.replace(' ', '_')}.pdf`;
 
         await FileSystem.writeAsStringAsync(fileUri, base64data, {
           encoding: 'base64',
@@ -241,42 +264,38 @@ export default function FrequenciaScreen() {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
             mimeType: 'application/pdf',
-            dialogTitle: `Partilhar Relatório - ${turnoSelecionado}`,
+            dialogTitle: `Relatório ${mesFormatado}`,
           });
         }
-        
         setLoading(false);
       };
-
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível gerar o relatório. Verifica a ligação.');
+      Alert.alert('Erro', 'Falha ao gerar o PDF.');
       setLoading(false);
     }
   };
 
-  if (loadingDados) {
-    return (
-      <ImageBackground source={require('../../assets/images/background.png')} style={styles.container}>
-        <HeaderApp showBack={true} title="Registrar Frequência" />
-        <ActivityIndicator size="large" color="#00838F" style={{ marginTop: 50 }} />
-      </ImageBackground>
-    );
-  }
-
   return (
     <ImageBackground source={require('../../assets/images/background.png')} style={styles.container}>
+      <HeaderApp showBack={true} />
+      
+      {/* barrinha pra trocar de mes */}
+      <View style={styles.monthSelector}>
+        <TouchableOpacity onPress={() => mudarMes(-1)} style={styles.monthButton}>
+          <MaterialCommunityIcons name="chevron-left" size={32} color="#00838F" />
+        </TouchableOpacity>
+        <Text style={styles.monthText}>{mesFormatado}</Text>
+        <TouchableOpacity onPress={() => mudarMes(1)} style={styles.monthButton}>
+          <MaterialCommunityIcons name="chevron-right" size={32} color="#00838F" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         
-        <HeaderApp 
-          showBack={true} 
-          title="Registar Frequência" 
-          subtitle={`Frequência mensal - ${getMesAtual()}`} 
-        />
-
         <View style={styles.cardTurno}>
           <Text style={styles.sectionTitle}>1. Turno deste Relatório</Text>
           <View style={styles.badgesContainer}>
-            {turnosDisponiveis.map((t) => {
+            {['Manhã', 'Tarde'].map((t) => {
               const selecionado = turnoSelecionado === t;
               const bloqueado = turnoTravado && !selecionado;
               
@@ -304,7 +323,7 @@ export default function FrequenciaScreen() {
         </View>
 
         <View style={styles.cardForm}>
-          <Text style={styles.sectionTitle}>2. Adicionar Aula</Text>
+          <Text style={styles.sectionTitle}>2. Adicionar Aula em {mesFormatado}</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Data da Aula</Text>
@@ -339,7 +358,7 @@ export default function FrequenciaScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Turmas Atendidas</Text>
             <View style={styles.badgesContainer}>
-              {turmasDisponiveis.map((t) => {
+              {['6º Ano', '7º Ano', '8º Ano', '9º Ano'].map((t) => {
                 const selecionado = turmasSelecionadas.includes(t);
                 return (
                   <TouchableOpacity 
@@ -382,7 +401,9 @@ export default function FrequenciaScreen() {
           </View>
         </View>
 
-        {frequenciasDoTurno.length > 0 && (
+        {loadingDados ? (
+          <ActivityIndicator size="large" color="#00838F" style={{ marginTop: 20 }} />
+        ) : frequenciasDoTurno.length > 0 ? (
           <View style={styles.listContainer}>
             <Text style={styles.sectionTitle}>Aulas Registadas ({frequenciasDoTurno.length})</Text>
             
@@ -441,11 +462,16 @@ export default function FrequenciaScreen() {
               ) : (
                 <>
                   <MaterialCommunityIcons name="file-pdf-box" size={24} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.generateButtonText}>Gerar Relatório da {turnoSelecionado}</Text>
+                  <Text style={styles.generateButtonText}>Gerar Relatório - {mesFormatado}</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
+        ) : (
+           <View style={{ alignItems: 'center', marginTop: 20 }}>
+             <MaterialCommunityIcons name="clipboard-text-outline" size={50} color="#CCC" />
+             <Text style={{ color: '#888', marginTop: 10 }}>Nenhuma aula registada em {mesFormatado}.</Text>
+           </View>
         )}
 
       </ScrollView>
@@ -455,7 +481,10 @@ export default function FrequenciaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
-  cardTurno: { backgroundColor: '#FFF', padding: 20, borderRadius: 15, width: '90%', alignSelf: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, marginBottom: 15, marginTop: -20, borderWidth: 1, borderColor: '#E0F7FA' },
+  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, backgroundColor: '#FFF', width: '90%', alignSelf: 'center', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 15, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, borderWidth: 1, borderColor: '#E0F7FA' },
+  monthText: { fontSize: 18, fontWeight: 'bold', color: '#00838F', textAlign: 'center', flex: 1 },
+  monthButton: { padding: 5 },
+  cardTurno: { backgroundColor: '#FFF', padding: 20, borderRadius: 15, width: '90%', alignSelf: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, marginBottom: 15, borderWidth: 1, borderColor: '#E0F7FA' },
   cardForm: { backgroundColor: '#FFF', padding: 20, borderRadius: 15, width: '90%', alignSelf: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 15 },
   inputGroup: { marginBottom: 15 },
@@ -476,8 +505,6 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 10 },
   addButton: { backgroundColor: '#00838F', paddingHorizontal: 20, height: 45, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   addButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-  cancelButton: { justifyContent: 'center', marginRight: 15 },
-  cancelButtonText: { color: '#999', fontWeight: 'bold', fontSize: 15 },
   listContainer: { marginTop: 5, width: '90%', alignSelf: 'center' },
   listItem: { flexDirection: 'row', backgroundColor: '#FFF', padding: 15, borderRadius: 12, marginBottom: 10, alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#00838F', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
   listContent: { flex: 1, paddingRight: 10 },
